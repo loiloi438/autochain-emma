@@ -5,17 +5,17 @@
 services:
   - type: web
     name: autchain-backend
-    env: php
+    env: docker
     plan: free
     root: backend
-    buildCommand: composer install --no-dev --optimize-autoloader && php artisan key:generate && php artisan migrate --force
-    startCommand: php artisan serve --host 0.0.0.0 --port $PORT
+    dockerfilePath: Dockerfile
     disk: 1024
     envVars:
       - key: APP_ENV
         value: production
       - key: APP_KEY
-        # Leave blank here -- set the generated APP_KEY in the Render dashboard secrets
+        # Set the Laravel app key here. Generate it locally with `php artisan key:generate --show` and paste the result.
+        # If you press the Render "Generate" button, it can also work, but the safest option is to paste a known APP_KEY.
         value: ""
       - key: DB_CONNECTION
         value: pgsql
@@ -43,7 +43,9 @@ staticSites:
     publishPath: dist
     envVars:
       - key: VITE_API_URL
-        # Set this to your backend public URL after the backend is deployed, e.g. https://autchain-backend.onrender.com/api
+        # Set this to your backend public URL after deployment, for example:
+        # https://autchain-backend.onrender.com/api
+        # The frontend uses this variable to call your Laravel API.
         value: ""
 
 databases:
