@@ -24,4 +24,4 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progre
 # Expose port (Render will assign $PORT at runtime)
 EXPOSE 8000
 
-CMD ["php", "artisan", "serve", "--host", "0.0.0.0", "--port", "${PORT}"]
+CMD ["sh", "-lc", "php artisan serve --host=0.0.0.0 --port=$PORT"]
