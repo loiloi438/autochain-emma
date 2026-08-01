@@ -1,4 +1,4 @@
-FROM php:8.3-cli
+FROM php:8.2-fpm
 WORKDIR /app
 COPY . .
 
@@ -20,7 +20,6 @@ RUN set -eux \
         libpq-dev \
         libzip-dev \
         libicu-dev \
-        libonig-dev \
         zlib1g-dev \
         libxml2-dev \
         pkg-config \
@@ -29,17 +28,6 @@ RUN set -eux \
         autoconf \
     && docker-php-ext-configure zip --with-libzip \
     && docker-php-ext-install -j$(nproc) pdo pdo_pgsql mbstring zip bcmath xml intl \
-    && apt-get purge -y --auto-remove \
-        libpq-dev \
-        libzip-dev \
-        libicu-dev \
-        libonig-dev \
-        zlib1g-dev \
-        libxml2-dev \
-        pkg-config \
-        g++ \
-        make \
-        autoconf \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Composer
@@ -51,4 +39,4 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progre
 # Expose port (Render will assign $PORT at runtime)
 EXPOSE 8000
 
-CMD ["sh", "-lc", "php artisan serve --host=0.0.0.0 --port=$PORT"]
+CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=$PORT"]
