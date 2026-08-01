@@ -11,7 +11,8 @@ RUN if [ ! -f composer.json ] && [ -f backend/composer.json ]; then \
 
 # System deps for composer & pgsql
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update \
+RUN set -eux \
+    && apt-get update \
     && apt-get install -y --no-install-recommends \
         git \
         curl \
