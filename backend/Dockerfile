@@ -1,8 +1,8 @@
 FROM php:8.2-fpm
 WORKDIR /app
 
-# Build context is the repo root, so copy the backend app explicitly.
-COPY backend/. ./
+# Render build context is the backend folder itself.
+COPY . .
 
 # System deps for composer & pgsql
 ENV DEBIAN_FRONTEND=noninteractive
