@@ -20,6 +20,7 @@ RUN set -eux \
         libpq-dev \
         libzip-dev \
         libicu-dev \
+        libonig-dev \
         zlib1g-dev \
         libxml2-dev \
         pkg-config \
