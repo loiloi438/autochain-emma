@@ -2,12 +2,16 @@ FROM php:8.2-fpm
 WORKDIR /app
 COPY . .
 
-# If the build context is the repo root, the Laravel app lives in /app/backend.
-# If the build context is already the backend folder, composer.json will already be in /app.
-RUN if [ ! -f composer.json ] && [ -f backend/composer.json ]; then \
+# Normalize the Laravel app directory for Render builds.
+# When the Docker build context is the repo root, the app is nested under /app/backend.
+# When the build context is already the backend folder, composer.json is already at /app.
+RUN if [ ! -f composer.json ] && [ -d backend ]; then \
     cp backend/composer.json backend/composer.lock . && \
     cp -r backend/* .; \
   fi
+
+# Fail fast if the Laravel manifest is still missing.
+RUN test -f composer.json
 
 # System deps for composer & pgsql
 ENV DEBIAN_FRONTEND=noninteractive
