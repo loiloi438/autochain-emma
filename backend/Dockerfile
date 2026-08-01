@@ -29,9 +29,16 @@ RUN set -eux \
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 # Install PHP deps
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+RUN if [ -f composer.json ]; then \
+        composer install --no-dev --optimize-autoloader --no-interaction --no-progress; \
+    elif [ -f backend/composer.json ]; then \
+        cd backend && composer install --no-dev --optimize-autoloader --no-interaction --no-progress; \
+    else \
+        echo "composer.json not found in build context" >&2; \
+        exit 1; \
+    fi
 
 # Expose port (Render will assign $PORT at runtime)
 EXPOSE 8000
 
-CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=$PORT"]
+CMD ["sh", "-c", "if [ -f artisan ]; then php artisan serve --host=0.0.0.0 --port=$PORT; else cd backend && php artisan serve --host=0.0.0.0 --port=$PORT; fi"]
