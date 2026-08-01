@@ -26,7 +26,6 @@ RUN set -eux \
         g++ \
         make \
         autoconf \
-    && docker-php-ext-configure zip --with-libzip \
     && docker-php-ext-install -j$(nproc) pdo pdo_pgsql mbstring zip bcmath xml intl \
     && rm -rf /var/lib/apt/lists/*
 
