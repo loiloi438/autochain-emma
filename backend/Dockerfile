@@ -18,11 +18,12 @@ RUN set -eux \
         libonig-dev \
         zlib1g-dev \
         libxml2-dev \
+        libgmp-dev \
         pkg-config \
         g++ \
         make \
         autoconf \
-    && docker-php-ext-install -j$(nproc) pdo pdo_pgsql mbstring zip bcmath xml intl \
+    && docker-php-ext-install -j$(nproc) pdo pdo_pgsql mbstring zip bcmath xml intl gmp \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Composer
