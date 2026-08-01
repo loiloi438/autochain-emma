@@ -1,8 +1,7 @@
 FROM php:8.2-fpm
 WORKDIR /app
 
-# Copy the Laravel app manifest first so Composer is always available in the build context.
-COPY composer.json composer.lock ./
+# Copy the Laravel app sources into the image.
 COPY . .
 
 # System deps for composer & pgsql
