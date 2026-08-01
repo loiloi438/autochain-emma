@@ -1,8 +1,8 @@
 FROM php:8.2-fpm
 WORKDIR /app
 
-# Copy the Laravel app sources into the image.
-COPY . .
+# Build context is the repo root, so copy the backend app explicitly.
+COPY backend/. ./
 
 # System deps for composer & pgsql
 ENV DEBIAN_FRONTEND=noninteractive

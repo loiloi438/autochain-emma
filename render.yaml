@@ -7,8 +7,8 @@ services:
     name: autchain-backend
     env: docker
     plan: free
-    root: backend
-    dockerfilePath: Dockerfile
+    root: .
+    dockerfilePath: backend/Dockerfile
     disk: 1024
     envVars:
       - key: APP_ENV
