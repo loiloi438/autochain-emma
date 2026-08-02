@@ -3,6 +3,13 @@
 use App\Http\Controllers\Api\AutoChainController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/', function () {
+    return response()->json([
+        'message' => 'AutoChain API is running',
+        'status' => 'ok',
+    ]);
+});
+
 Route::post('/login', [AutoChainController::class, 'login']);
 Route::get('/public/vehicles/{vehicle}/history', [AutoChainController::class, 'publicHistory']);
 
