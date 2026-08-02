@@ -22,3 +22,19 @@ Route::get('/run-migrations', function () {
         ], 500);
     }
 });
+
+Route::get('/run-seeders', function () {
+    try {
+        Artisan::call('db:seed', ['--force' => true]);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Données de démonstration (Seeders) insérées avec succès !',
+            'output' => Artisan::output(),
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+});
