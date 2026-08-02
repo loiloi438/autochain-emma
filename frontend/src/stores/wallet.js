@@ -7,6 +7,14 @@ function getContractAddress() {
   return registryArtifact.address || import.meta.env.VITE_CONTRACT_ADDRESS || ''
 }
 
+function getMetaMaskProvider() {
+  if (typeof window === 'undefined' || !window.ethereum) {
+    return null
+  }
+  const provider = window.ethereum?.providers?.find((p) => p.isMetaMask) || window.ethereum
+  return provider
+}
+
 export const useWalletStore = defineStore('wallet', {
   state: () => ({
     address: '',
@@ -17,35 +25,49 @@ export const useWalletStore = defineStore('wallet', {
   actions: {
     async connect() {
       this.error = ''
-      if (!window.ethereum) {
-        this.error = 'MetaMask est requis pour signer les transactions critiques.'
+      const provider = getMetaMaskProvider()
+      if (!provider) {
+        this.error = 'MetaMask est requis pour signer les transactions critiques. Installez MetaMask ou ouvrez votre extension.'
         throw new Error(this.error)
       }
-      const provider = new BrowserProvider(window.ethereum)
-      const accounts = await provider.send('eth_requestAccounts', [])
+
+      const accounts = await provider.request({ method: 'eth_requestAccounts' })
       if (!accounts || !accounts.length) {
         throw new Error('Aucun compte MetaMask trouvé.')
       }
       this.address = accounts[0]
-      const network = await provider.getNetwork()
-      this.chainId = Number(network.chainId)
+      const chainIdHex = await provider.request({ method: 'eth_chainId' })
+      this.chainId = Number(chainIdHex)
       return this.address
     },
 
     async getSigner() {
       await this.connect()
-      const provider = new BrowserProvider(window.ethereum)
-      return provider.getSigner()
+      const provider = getMetaMaskProvider()
+      if (!provider) {
+        throw new Error('MetaMask est requis pour signer les transactions critiques.')
+      }
+      return new BrowserProvider(provider).getSigner()
     },
 
     async signMessage(message) {
       this.error = ''
-      if (!window.ethereum) {
-        this.error = 'MetaMask est requis pour signer les transactions critiques.'
+      const provider = getMetaMaskProvider()
+      if (!provider) {
+        this.error = 'MetaMask est requis pour signer les transactions critiques. Installez MetaMask ou ouvrez votre extension.'
         throw new Error(this.error)
       }
-      const signer = await this.getSigner()
-      return signer.signMessage(message)
+
+      if (!this.address) {
+        await this.connect()
+      }
+
+      const account = this.address
+      const signature = await provider.request({
+        method: 'personal_sign',
+        params: [message, account],
+      })
+      return signature
     },
 
     async loginWithSignature() {

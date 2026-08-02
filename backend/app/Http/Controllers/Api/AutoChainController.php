@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\PersonalAccessToken;
 use Spatie\Permission\Models\Role as SpatieRole;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use kornrunner\Eth;
 use kornrunner\Keccak;
 
@@ -36,13 +37,18 @@ class AutoChainController extends Controller
             ]);
 
             $wallet = strtolower($data['wallet_address']);
-            $recovered = $this->recoverAddressFromSignature($data['message'], $data['signature']);
+
+            try {
+                $recovered = $this->recoverAddressFromSignature($data['message'], $data['signature']);
+            } catch (\Throwable $exception) {
+                throw ValidationException::withMessages(['signature' => 'La signature MetaMask est invalide.']);
+            }
 
             if ($recovered !== $wallet) {
                 throw ValidationException::withMessages(['wallet_address' => 'La signature MetaMask est invalide.']);
             }
 
-            $user = User::where('wallet_address', $wallet)->first();
+            $user = User::whereRaw('LOWER(wallet_address) = ?', [$wallet])->first();
             if (! $user) {
                 throw ValidationException::withMessages(['wallet_address' => 'Ce wallet n’est associé à aucun compte.']);
             }
@@ -87,8 +93,16 @@ class AutoChainController extends Controller
 
         $hashed = Eth::hashPersonalMessage(bin2hex($message));
         $publicKey = Eth::ecRecover($hashed, $r, $s, $v);
-        $publicKey = ltrim($publicKey, '0x');
-        $address = substr(Keccak::hash(hex2bin(substr($publicKey, 2)), 256), 24);
+
+        if (str_starts_with($publicKey, '0x')) {
+            $publicKey = substr($publicKey, 2);
+        }
+
+        if (str_starts_with($publicKey, '04')) {
+            $publicKey = substr($publicKey, 2);
+        }
+
+        $address = substr(Keccak::hash(hex2bin($publicKey), 256), 24);
 
         return '0x' . strtolower($address);
     }
@@ -355,11 +369,135 @@ class AutoChainController extends Controller
         return response()->json($tx, 201);
     }
 
+    public function adminUsers(): JsonResponse
+    {
+        $users = User::with('roles')->get()->map(function (User $user) {
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'wallet_address' => $user->wallet_address,
+                'roles' => $user->roles->pluck('name'),
+            ];
+        });
+
+        return response()->json($users);
+    }
+
+    public function adminUpdateUserRoles(Request $request, User $user): JsonResponse
+    {
+        $data = $request->validate([
+            'roles' => ['required', 'array'],
+            'roles.*' => ['string'],
+        ]);
+
+        $roles = array_map('strtolower', $data['roles']);
+
+        DB::transaction(function () use ($user, $roles) {
+            foreach ($roles as $roleName) {
+                SpatieRole::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
+            }
+            $user->syncRoles($roles);
+        });
+
+        return response()->json([
+            'updated' => true,
+            'roles' => $user->roles->pluck('name'),
+        ]);
+    }
+
+    public function adminSaveContractConfig(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'address' => ['required', 'string'],
+            'network' => ['required', 'string'],
+        ]);
+
+        Storage::disk('local')->put('contract-config.json', json_encode([
+            'address' => $data['address'],
+            'network' => $data['network'],
+        ], JSON_PRETTY_PRINT));
+
+        return response()->json(['saved' => true]);
+    }
+
+    public function managerFleet(): JsonResponse
+    {
+        $vehicles = Vehicle::with(['assignments.driver'])->get()->map(function (Vehicle $vehicle) {
+            return [
+                'id' => $vehicle->id,
+                'plate_number' => $vehicle->plate_number,
+                'brand' => $vehicle->brand,
+                'model' => $vehicle->model,
+                'status' => $vehicle->status,
+                'current_km' => $vehicle->current_km,
+                'driver' => $vehicle->assignments->first()?->driver?->only(['id', 'name']) ?? null,
+            ];
+        });
+
+        return response()->json($vehicles);
+    }
+
+    public function managerFuelSummary(): JsonResponse
+    {
+        $summary = FuelLog::selectRaw('vehicle_id, SUM(liters) AS total_liters, SUM(amount) AS total_amount')
+            ->groupBy('vehicle_id')
+            ->get();
+
+        return response()->json($summary);
+    }
+
+    public function driverAssignments(Request $request): JsonResponse
+    {
+        $assignments = Assignment::with('vehicle')
+            ->where('user_id', $request->user()->id)
+            ->where('status', 'active')
+            ->get();
+
+        return response()->json(['current' => $assignments->first(), 'all' => $assignments]);
+    }
+
+    public function driverCheckin(Request $request, Vehicle $vehicle): JsonResponse
+    {
+        if (! $this->canDriveFleet($request->user())) {
+            return $this->forbidden('Vous n’êtes pas autorisé à enregistrer la prise en charge.');
+        }
+
+        $vehicle->update(['status' => 'assigned']);
+
+        return response()->json(['checked_in' => true, 'vehicle' => $vehicle]);
+    }
+
+    public function garageMaintenances(): JsonResponse
+    {
+        $items = MaintenanceLog::with('vehicle')->latest('performed_at')->limit(20)->get()->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'vehicle_id' => $item->vehicle_id,
+                'vehicle_plate' => $item->vehicle?->plate_number,
+                'service_type' => $item->service_type,
+                'description' => $item->description,
+                'parts' => $item->parts,
+                'performed_at' => $item->performed_at,
+                'tx_hash' => $item->tx_hash,
+                'status' => $item->tx_hash ? BlockchainTx::where('tx_hash', $item->tx_hash)->value('status') : 'backend',
+            ];
+        });
+
+        return response()->json($items);
+    }
+
     public function contractInfo(BlockchainIndexer $indexer): JsonResponse
     {
+        $config = [];
+        if (Storage::disk('local')->exists('contract-config.json')) {
+            $config = json_decode(Storage::disk('local')->get('contract-config.json'), true) ?? [];
+        }
+
         return response()->json([
             'address' => $indexer->contractAddress(),
             'artifact' => $indexer->artifact(),
+            'config' => $config,
         ]);
     }
 
@@ -371,7 +509,6 @@ class AutoChainController extends Controller
         DB::transaction(function () use ($roles, &$mapped) {
             foreach ($roles as $roleName => $address) {
                 $roleNameNorm = strtolower($roleName);
-                // Ensure roles are created for the `web` guard used by application tests
                 $role = SpatieRole::firstOrCreate(['name' => $roleNameNorm, 'guard_name' => 'web']);
 
                 $user = User::where('wallet_address', strtolower($address))->first();
