@@ -5,22 +5,22 @@
     <!-- Stats Cards -->
     <div class="stats-grid">
       <div class="stat-card available">
-        <span class="stat-number">{{ dashboard.fleet?.total || 12 }}</span>
+        <span class="stat-number">{{ dashboard.fleet?.total || 0 }}</span>
         <span class="stat-label">Véhicules<br />Disponibles</span>
       </div>
 
       <div class="stat-card assigned">
-        <span class="stat-number">{{ dashboard.fleet?.assigned || 5 }}</span>
+        <span class="stat-number">{{ dashboard.fleet?.assigned || 0 }}</span>
         <span class="stat-label">En Mission</span>
       </div>
 
       <div class="stat-card maintenance">
-        <span class="stat-number">{{ dashboard.fleet?.maintenance || 2 }}</span>
+        <span class="stat-number">{{ dashboard.fleet?.maintenance || 0 }}</span>
         <span class="stat-label">En Maintenance</span>
       </div>
 
       <div class="stat-card alerts">
-        <span class="stat-number">{{ dashboard.alerts?.length || 3 }}</span>
+        <span class="stat-number">{{ dashboard.alerts?.length || 0 }}</span>
         <span class="stat-label">Alertes</span>
       </div>
     </div>
@@ -175,7 +175,7 @@ import TransactionChart from '../components/TransactionChart.vue'
 
 const auth = useAuthStore()
 const dashboard = reactive({
-  fleet: { total: 12, available: 10, assigned: 5, maintenance: 2 },
+  fleet: { total: 0, available: 0, assigned: 0, maintenance: 0 },
   alerts: [],
   vehicles: [],
   recent_timeline: [],
@@ -183,16 +183,9 @@ const dashboard = reactive({
 const loading = ref(false)
 const error = ref('')
 const transactionData = ref([])
-const selectedVehicle = ref('Peugeot 3008 - AB-123-CD')
-const timeline = ref([
-  { date: '10/02/2022', type: 'mission', label: 'Prise en charge par Paul R.', description: 'Début de mission', km: null },
-  { date: '15/02/2022', type: 'maintenance', label: 'Révision - Garage Dupont', description: 'Vidange et Changement Plaquettes', km: '87.380' },
-  { date: '18/02/2022', type: 'inspection', label: 'Contrôle Technique', description: 'CT Validé', km: '0x9d7o...89bc' },
-])
-const upcomingAlerts = ref([
-  { icon: '✅', title: 'Assurance du Peugeot 3008', description: 'à renouveler le 20/03/2023' },
-  { icon: '✅', title: 'Prochaine Vidange pour', description: 'XY-456-ZT dans 500 km' },
-])
+const selectedVehicle = ref('')
+const timeline = ref([])
+const upcomingAlerts = ref([])
 
 async function load() {
   loading.value = true
@@ -200,21 +193,19 @@ async function load() {
   try {
     const { data } = await api.get('/dashboard')
     Object.assign(dashboard, {
-      fleet: data.fleet || { total: 12, available: 10, assigned: 5, maintenance: 2 },
+      fleet: data.fleet || { total: 0, available: 0, assigned: 0, maintenance: 0 },
       alerts: data.alerts || [],
       vehicles: data.vehicles || [],
       recent_timeline: data.recent_timeline || [],
     })
+    timeline.value = dashboard.recent_timeline
+    upcomingAlerts.value = dashboard.alerts.map((alert) => ({
+      icon: '⚠️',
+      title: alert.title,
+      description: alert.message || alert.vehicle?.plate_number || 'Action requise',
+    }))
 
-    transactionData.value = [
-      { date: '2024-01-01', confirmed: 6.5, pending: 0 },
-      { date: '2024-01-02', confirmed: 7.2, pending: 0 },
-      { date: '2024-01-03', confirmed: 6.8, pending: 0 },
-      { date: '2024-01-04', confirmed: 7.5, pending: 0 },
-      { date: '2024-01-05', confirmed: 6.9, pending: 0 },
-      { date: '2024-01-06', confirmed: 7.1, pending: 0 },
-      { date: '2024-01-07', confirmed: 6.6, pending: 0 },
-    ]
+    transactionData.value = []
   } catch (e) {
     error.value = e.response?.data?.message || 'Impossible de charger le tableau de bord.'
   } finally {

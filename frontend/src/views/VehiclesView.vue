@@ -64,7 +64,7 @@ const roleLabel = computed(() => {
 })
 
 async function load() {
-  const { data } = await api.get('/vehicles')
+  const { data } = await api.get('/vehicules')
   vehicles.value = data.data || data
 }
 

@@ -1,5 +1,5 @@
 <template>
-  <div v-if="auth.isAuthenticated" class="app-layout">
+  <div v-if="auth.isAuthenticated" class="app-layout" :class="`role-${auth.homeRoute}`">
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-brand">
@@ -11,30 +11,17 @@
       </div>
 
       <nav class="sidebar-menu">
-        <RouterLink to="/dashboard" class="menu-item" :class="{ active: isActive('/dashboard') }">
-          <span class="icon">🏠</span>
-          <span>Tableau de Bord</span>
-        </RouterLink>
-        <RouterLink to="/vehicles" class="menu-item" :class="{ active: isActive('/vehicles') }">
-          <span class="icon">🚗</span>
-          <span>Véhicules</span>
-        </RouterLink>
-        <RouterLink to="/dashboard" class="menu-item" :class="{ active: isActive('/drivers') }">
-          <span class="icon">👤</span>
-          <span>Chauffeurs</span>
-        </RouterLink>
-        <RouterLink to="/dashboard" class="menu-item" :class="{ active: isActive('/maintenance') }">
-          <span class="icon">🔧</span>
-          <span>Entretien</span>
-        </RouterLink>
-        <RouterLink to="/dashboard" class="menu-item" :class="{ active: isActive('/alerts') }">
-          <span class="icon">⚠️</span>
-          <span>Alertes</span>
-          <span v-if="alertCount > 0" class="badge">{{ alertCount }}</span>
-        </RouterLink>
-        <RouterLink to="/dashboard" class="menu-item" :class="{ active: isActive('/documents') }">
-          <span class="icon">📋</span>
-          <span>Documents</span>
+        <span class="menu-caption">Navigation {{ roleProfile.short }}</span>
+        <RouterLink
+          v-for="item in navigationItems"
+          :key="item.to"
+          :to="item.to"
+          class="menu-item"
+          :class="{ active: isActive(item.match || item.to) }"
+        >
+          <span class="icon">{{ item.icon }}</span>
+          <span>{{ item.label }}</span>
+          <span v-if="item.to === '/alerts' && alertCount > 0" class="badge">{{ alertCount }}</span>
         </RouterLink>
       </nav>
 
@@ -57,7 +44,11 @@
     <div class="main-wrapper">
       <!-- Header -->
       <header class="header">
-        <h1 class="page-title">Tableau de Bord</h1>
+        <div>
+          <span class="header-kicker">{{ currentSection }}</span>
+          <h1 class="page-title">{{ roleProfile.title }}</h1>
+          <p class="page-context">{{ roleProfile.context }}</p>
+        </div>
 
         <div class="header-actions">
           <div class="notifications">
@@ -95,9 +86,10 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useAuthStore } from './stores/auth'
 import { useWalletStore } from './stores/wallet'
+import api from './services/api'
 import { useRouter, useRoute } from 'vue-router'
 import GlobalToasts from './components/GlobalToasts.vue'
 
@@ -105,7 +97,89 @@ const auth = useAuthStore()
 const wallet = useWalletStore()
 const router = useRouter()
 const route = useRoute()
-const alertCount = ref(3)
+const alertCount = ref(0)
+
+const roleProfiles = {
+  admin: {
+    short: 'admin',
+    title: 'Centre de pilotage',
+    context: 'Administration, rôles et supervision de la plateforme',
+    navigation: [
+      { to: '/admin', label: 'Administration', icon: '⚙️' },
+      { to: '/vehicles', label: 'Parc automobile', icon: '🚗' },
+      { to: '/alerts', label: 'Alertes', icon: '⚠️' },
+      { to: '/documents', label: 'Documents', icon: '📋' },
+    ],
+  },
+  manager: {
+    short: 'gestionnaire',
+    title: 'Pilotage de flotte',
+    context: 'Décisions opérationnelles et suivi des performances',
+    navigation: [
+      { to: '/dashboard', label: 'Synthèse', icon: '📊' },
+      { to: '/vehicles', label: 'Parc automobile', icon: '🚗' },
+      { to: '/chauffeurs', label: 'Chauffeurs', icon: '👤' },
+      { to: '/entretien', label: 'Maintenance', icon: '🔧' },
+      { to: '/alerts', label: 'Alertes', icon: '⚠️' },
+      { to: '/documents', label: 'Documents', icon: '📋' },
+    ],
+  },
+  driver: {
+    short: 'conducteur',
+    title: 'Espace conducteur',
+    context: 'Votre mission, votre véhicule et vos relevés',
+    navigation: [
+      { to: '/driver', label: 'Ma mission', icon: '🛣️' },
+      { to: '/vehicles', label: 'Mon véhicule', icon: '🚗' },
+      { to: '/alerts', label: 'Mes alertes', icon: '⚠️' },
+      { to: '/documents', label: 'Mes documents', icon: '📋' },
+    ],
+  },
+  garage: {
+    short: 'atelier',
+    title: 'Atelier de maintenance',
+    context: 'Interventions, pièces et historique technique',
+    navigation: [
+      { to: '/garage', label: 'Nouvelle intervention', icon: '🔧' },
+      { to: '/vehicles', label: 'Véhicules', icon: '🚗' },
+      { to: '/entretien', label: 'Historique atelier', icon: '🧰' },
+      { to: '/documents', label: 'Documents techniques', icon: '📋' },
+    ],
+  },
+  auditor: {
+    short: 'audit',
+    title: 'Espace audit',
+    context: 'Vérification des preuves et historique certifié',
+    navigation: [
+      { to: '/auditor', label: 'Audit véhicule', icon: '🔎' },
+      { to: '/vehicles', label: 'Parc consultable', icon: '🚗' },
+      { to: '/alerts', label: 'Événements', icon: '⚠️' },
+    ],
+  },
+}
+
+const roleProfile = computed(() => roleProfiles[auth.homeRoute] || roleProfiles.manager)
+const navigationItems = computed(() => roleProfile.value.navigation)
+const currentSection = computed(() => {
+  const item = navigationItems.value.find((entry) => isActive(entry.match || entry.to))
+  return item?.label || 'Vue d’ensemble'
+})
+
+async function loadAlertCount() {
+  if (!auth.isAuthenticated) {
+    alertCount.value = 0
+    return
+  }
+
+  try {
+    const { data } = await api.get('/alerts')
+    alertCount.value = Array.isArray(data) ? data.length : 0
+  } catch {
+    alertCount.value = 0
+  }
+}
+
+watch(() => auth.isAuthenticated, loadAlertCount, { immediate: true })
 
 function isActive(path) {
   return route.path.startsWith(path)
@@ -136,29 +210,37 @@ function logout() {
 .app-layout {
   display: flex;
   height: 100vh;
-  background-color: #f5f7fa;
+  background: transparent;
 }
 
 /* ============ SIDEBAR ============ */
 .sidebar {
-  width: 280px;
-  background-color: #1e3a5f;
+  width: 272px;
+  flex: 0 0 272px;
+  background: #172b35;
   color: white;
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 12px 0 30px rgba(23, 43, 53, 0.12);
 }
 
 .sidebar-brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 20px;
+  padding: 24px 22px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .logo-icon {
-  font-size: 32px;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--role-accent);
+  font-size: 24px;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--role-accent) 35%, transparent);
 }
 
 .brand-text {
@@ -179,18 +261,27 @@ function logout() {
 
 .sidebar-menu {
   flex: 1;
-  padding: 20px 12px;
+  padding: 24px 14px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+}
+
+.menu-caption {
+  padding: 0 12px 10px;
+  color: rgba(255, 255, 255, .42);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
 }
 
 .menu-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
-  border-radius: 8px;
+  padding: 13px 14px;
+  border-radius: 11px;
   color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
   transition: all 0.2s;
@@ -207,7 +298,7 @@ function logout() {
 }
 
 .menu-item.active {
-  background-color: #3b82f6;
+  background: linear-gradient(100deg, var(--role-accent), color-mix(in srgb, var(--role-accent) 72%, #172b35));
   color: white;
   font-weight: 600;
 }
@@ -228,7 +319,7 @@ function logout() {
 }
 
 .sidebar-footer {
-  padding: 16px;
+  padding: 18px 14px 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -243,7 +334,7 @@ function logout() {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: #3b82f6;
+  background-color: var(--role-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -284,18 +375,41 @@ function logout() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 30px;
-  background-color: white;
-  border-bottom: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 22px 34px;
+  background: rgba(255, 255, 255, .88);
+  border-bottom: 1px solid #e4e8e1;
+  box-shadow: 0 8px 24px rgba(30, 50, 42, .04);
+  backdrop-filter: blur(14px);
+}
+
+.header-kicker {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--role-accent);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .13em;
+  text-transform: uppercase;
 }
 
 .page-title {
   font-size: 28px;
   font-weight: 700;
-  color: #1f2937;
+  color: #172033;
   margin: 0;
 }
+
+.page-context {
+  margin: 4px 0 0;
+  color: #6c7585;
+  font-size: 13px;
+}
+
+.role-admin { --role-accent: #c97729; }
+.role-manager { --role-accent: #167d72; }
+.role-driver { --role-accent: #2879a7; }
+.role-garage { --role-accent: #4b8f55; }
+.role-auditor { --role-accent: #8065a8; }
 
 .header-actions {
   display: flex;
@@ -333,10 +447,10 @@ function logout() {
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background-color: #3b82f6;
+  background-color: var(--role-accent);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
@@ -344,7 +458,7 @@ function logout() {
 }
 
 .wallet-button:hover {
-  background-color: #2563eb;
+  filter: brightness(.92);
 }
 
 .profile-menu {
@@ -355,23 +469,58 @@ function logout() {
 
 .user-badge {
   padding: 6px 12px;
-  background-color: #e5e7eb;
-  border-radius: 20px;
+  background-color: #eef2ed;
+  border: 1px solid #e0e7df;
+  border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  color: #364238;
 }
 
 /* ============ PAGE CONTENT ============ */
 .page-content {
   flex: 1;
   overflow-y: auto;
-  padding: 30px;
+  padding: 34px;
+  min-width: 0;
 }
 
 /* ============ AUTH LAYOUT ============ */
 .auth-layout {
   width: 100%;
   height: 100%;
+}
+
+@media (max-width: 900px) {
+  .sidebar { width: 86px; flex-basis: 86px; }
+  .brand-text, .menu-caption, .menu-item span:not(.icon), .user-details, .logout span:not(.icon) { display: none; }
+  .sidebar-brand { justify-content: center; padding: 18px 12px; }
+  .sidebar-menu { padding-inline: 10px; }
+  .menu-item { justify-content: center; padding-inline: 10px; }
+  .menu-item .badge { position: absolute; top: 3px; right: 4px; margin: 0; padding: 1px 5px; }
+  .sidebar-footer { padding-inline: 10px; }
+  .user-info { justify-content: center; }
+  .header { padding: 18px 22px; }
+  .header-actions { gap: 10px; }
+  .wallet-button { padding: 10px; font-size: 0; }
+  .wallet-button:first-letter { font-size: 16px; }
+  .user-badge { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .page-content { padding: 22px; }
+}
+
+@media (max-width: 560px) {
+  .app-layout { display: block; }
+  .sidebar { width: 100%; height: auto; display: block; }
+  .sidebar-brand { justify-content: flex-start; padding: 12px 16px; }
+  .sidebar-menu { flex-direction: row; overflow-x: auto; padding: 8px 10px 10px; }
+  .menu-item { flex: 0 0 auto; gap: 7px; padding: 9px 11px; }
+  .menu-item span:not(.icon) { display: inline; font-size: 12px; }
+  .sidebar-footer { display: none; }
+  .main-wrapper { min-height: calc(100vh - 72px); }
+  .header { padding: 16px; align-items: flex-start; }
+  .page-title { font-size: 21px; }
+  .page-context { max-width: 210px; font-size: 12px; }
+  .notifications, .profile-menu { display: none; }
+  .page-content { padding: 16px; }
 }
 </style>

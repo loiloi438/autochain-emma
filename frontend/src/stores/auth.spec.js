@@ -1,16 +1,16 @@
-const apiMock = {
-  post: vi.fn(),
-  get: vi.fn(),
-}
-
 vi.mock('../services/api', () => ({
   __esModule: true,
-  default: apiMock,
+  default: {
+    post: vi.fn(),
+    get: vi.fn(),
+  },
 }))
 
 import { createPinia, setActivePinia } from 'pinia'
 import { useAuthStore } from './auth'
 import api from '../services/api'
+
+const apiMock = api
 
 describe('auth store', () => {
   beforeEach(() => {
@@ -50,5 +50,15 @@ describe('auth store', () => {
       signature: 'sig',
     })
     expect(auth.token).toBe('wallet-token')
+  })
+
+  it('selects the dedicated home page from the user role', () => {
+    const auth = useAuthStore()
+
+    auth.user = { roles: [{ name: 'DRIVER' }] }
+
+    expect(auth.roles).toEqual(['driver'])
+    expect(auth.hasRole('driver')).toBe(true)
+    expect(auth.homeRoute).toBe('driver')
   })
 })

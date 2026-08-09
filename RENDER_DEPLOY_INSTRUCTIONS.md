@@ -22,5 +22,5 @@ Après push, ouvrez Render (https://render.com), créez un nouveau service "Web 
 
 Notes:
 - Si votre repo contient un `frontend` monorepo, Render trouvera le fichier `render.yaml` et créera les services définis.
-- Renseignez les variables d'environnement `APP_KEY` et `VITE_API_URL` dans le dashboard Render pour que l'app fonctionne en production.
+- Renseignez `APP_KEY`, `FRONTEND_URL` et `CORS_ALLOWED_ORIGINS` sur le service backend, puis `VITE_API_BASE_URL=https://autchain-backend.onrender.com/api` sur le service frontend. Remplacez les URLs d'exemple par vos domaines réels.
 - Si vous voulez, je peux générer le PR description et le diff que vous pourrez coller dans votre plateforme Git.

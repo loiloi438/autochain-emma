@@ -10,6 +10,12 @@ Route::get('/', function () {
     ]);
 });
 
+Route::get('/ping', fn () => response()->json([
+    'status' => 'ok',
+    'service' => 'autochain-api',
+    'timestamp' => now()->toISOString(),
+]));
+
 Route::post('/login', [AutoChainController::class, 'login']);
 Route::get('/public/vehicles/{vehicle}/history', [AutoChainController::class, 'publicHistory']);
 
@@ -47,6 +53,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::get('/vehicles', [AutoChainController::class, 'vehicles'])->middleware('role:manager|admin|driver|garage|auditor');
+    Route::get('/vehicules', [AutoChainController::class, 'vehicles'])->middleware('role:manager|admin|driver|garage|auditor');
     Route::get('/vehicles/{vehicle}', [AutoChainController::class, 'showVehicle'])->middleware('role:manager|admin|driver|garage|auditor');
     Route::patch('/vehicles/{vehicle}', [AutoChainController::class, 'updateVehicle'])->middleware('role:manager|admin');
     Route::post('/vehicles/{vehicle}/documents', [AutoChainController::class, 'uploadDocument'])->middleware('role:manager|admin');
@@ -56,4 +63,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/timeline', [AutoChainController::class, 'timeline'])->middleware('role:manager|admin|driver|garage|auditor');
     Route::get('/alerts', [AutoChainController::class, 'alerts'])->middleware('role:manager|admin|driver|garage|auditor');
     Route::post('/alerts/generate', [AutoChainController::class, 'generateAlerts'])->middleware('role:manager|admin');
+    Route::get('/chauffeurs', [AutoChainController::class, 'drivers'])->middleware('role:manager|admin|driver|garage|auditor');
+    Route::get('/entretien', [AutoChainController::class, 'maintenances'])->middleware('role:manager|admin|driver|garage|auditor');
 });

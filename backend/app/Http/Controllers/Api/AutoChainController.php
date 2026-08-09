@@ -157,6 +157,26 @@ class AutoChainController extends Controller
         return response()->json(Vehicle::with(['assignments.driver', 'alerts'])->latest()->paginate(20));
     }
 
+    public function drivers(): JsonResponse
+    {
+        return response()->json(User::role('driver')->with([
+            'roles',
+            'assignments' => fn ($query) => $query->where('status', 'active')->with('vehicle'),
+        ])->get()->map(fn (User $driver) => [
+            'id' => $driver->id,
+            'name' => $driver->name,
+            'email' => $driver->email,
+            'assignments' => $driver->assignments,
+        ]));
+    }
+
+    public function maintenances(): JsonResponse
+    {
+        return response()->json(MaintenanceLog::with(['vehicle', 'garage'])
+            ->latest('performed_at')
+            ->paginate(20));
+    }
+
     public function storeVehicle(Request $request): JsonResponse
     {
         if (! $this->canManageFleet($request->user())) {

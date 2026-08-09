@@ -16,17 +16,24 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $roles = ['Super Admin', 'Gestionnaire de Parc', 'Chauffeur', 'Garagiste Agréé', 'Auditeur'];
-        foreach ($roles as $role) {
-            Role::findOrCreate($role);
+        $roles = [
+            'admin' => 'Super Admin',
+            'manager' => 'Gestionnaire de Parc',
+            'driver' => 'Chauffeur',
+            'garage' => 'Garagiste Agréé',
+            'auditor' => 'Auditeur',
+        ];
+
+        foreach (array_keys($roles) as $role) {
+            Role::findOrCreate($role, 'web');
         }
 
         $users = [
-            ['Super Admin', 'Admin AutoChain', 'admin@autochain.test', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'],
-            ['Gestionnaire de Parc', 'Gestionnaire Parc', 'gestionnaire@autochain.test', '0x70997970c51812dc3a010c7d01b50e0d17dc79c8'],
-            ['Chauffeur', 'Chauffeur Demo', 'chauffeur@autochain.test', '0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc'],
-            ['Garagiste Agréé', 'Garage Certifié', 'garage@autochain.test', '0x90f79bf6eb2c4f870365e785982e1f101e93b906'],
-            ['Auditeur', 'Auditeur Public', 'auditeur@autochain.test', '0x15d34aaf54267db7d7c367839aaf71a00a2c6a65'],
+            ['admin', 'Admin AutoChain', 'admin@autochain.test', '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'],
+            ['manager', 'Gestionnaire Parc', 'gestionnaire@autochain.test', '0x70997970c51812dc3a010c7d01b50e0d17dc79c8'],
+            ['driver', 'Chauffeur Demo', 'chauffeur@autochain.test', '0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc'],
+            ['garage', 'Garage Certifié', 'garage@autochain.test', '0x90f79bf6eb2c4f870365e785982e1f101e93b906'],
+            ['auditor', 'Auditeur Public', 'auditeur@autochain.test', '0x15d34aaf54267db7d7c367839aaf71a00a2c6a65'],
         ];
 
         foreach ($users as [$role, $name, $email, $wallet]) {

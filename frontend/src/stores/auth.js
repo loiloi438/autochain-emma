@@ -8,8 +8,27 @@ export const useAuthStore = defineStore('auth', {
   }),
   getters: {
     isAuthenticated: (state) => Boolean(state.token),
-    roles: (state) => state.user?.roles?.map((role) => role.name) || [],
-    hasRole: (state) => (roleName) => state.user?.roles?.some((role) => role.name === roleName),
+    roles: (state) => (state.user?.roles || [])
+      .map((role) => (typeof role === 'string' ? role : role.name))
+      .filter(Boolean)
+      .map((role) => role.toLowerCase()),
+    hasRole: (state) => (roleName) => (state.user?.roles || []).some((role) => {
+      const name = typeof role === 'string' ? role : role.name
+      return name?.toLowerCase() === roleName.toLowerCase()
+    }),
+    homeRoute: (state) => {
+      const roles = (state.user?.roles || []).map((role) => {
+        const name = typeof role === 'string' ? role : role.name
+        return name?.toLowerCase()
+      })
+
+      if (roles.includes('admin')) return 'admin'
+      if (roles.includes('auditor')) return 'auditor'
+      if (roles.includes('driver')) return 'driver'
+      if (roles.includes('garage')) return 'garage'
+
+      return 'dashboard'
+    },
   },
   actions: {
     async login(email, password) {

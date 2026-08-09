@@ -161,7 +161,7 @@ async function submit() {
   try {
     await auth.login(email.value, password.value)
     toast.push('Connexion réussie', 'info')
-    router.push('/dashboard')
+    router.push({ name: auth.homeRoute })
   } catch (e) {
     const msg = e.response?.data?.message || 'Connexion impossible'
     error.value = msg
@@ -183,7 +183,7 @@ async function loginWithWallet() {
     toast.push('Signature reçue — connexion en cours', 'info')
     await auth.loginWithWallet(address, message, signature)
     toast.push('Connexion via MetaMask réussie', 'info')
-    router.push('/dashboard')
+    router.push({ name: auth.homeRoute })
   } catch (e) {
     isConnecting.value = false
     isSigning.value = false
