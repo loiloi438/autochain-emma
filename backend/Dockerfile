@@ -35,4 +35,4 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progre
 # Expose port (Render will assign $PORT at runtime)
 EXPOSE 8000
 
-CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=$PORT"]
+CMD ["sh", "-c", "php artisan migrate --force && php artisan db:seed --class=DatabaseSeeder --force && exec php artisan serve --host=0.0.0.0 --port=$PORT"]
