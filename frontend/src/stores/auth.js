@@ -7,20 +7,18 @@ export const useAuthStore = defineStore('auth', {
     user: null,
   }),
   getters: {
-    isAuthenticated: (state) => Boolean(state.token),
-    roles: (state) => (state.user?.roles || [])
-      .map((role) => (typeof role === 'string' ? role : role.name))
+    roleNames: (state) => (state.user?.roles || [])
+      .map((role) => (typeof role === 'string' ? role : role?.name))
       .filter(Boolean)
       .map((role) => role.toLowerCase()),
+    isAuthenticated: (state) => Boolean(state.token),
+    roles: (state, getters) => getters.roleNames,
     hasRole: (state) => (roleName) => (state.user?.roles || []).some((role) => {
-      const name = typeof role === 'string' ? role : role.name
+      const name = typeof role === 'string' ? role : role?.name
       return name?.toLowerCase() === roleName.toLowerCase()
     }),
-    homeRoute: (state) => {
-      const roles = (state.user?.roles || []).map((role) => {
-        const name = typeof role === 'string' ? role : role.name
-        return name?.toLowerCase()
-      })
+    homeRoute: (state, getters) => {
+      const roles = getters.roleNames
 
       if (roles.includes('admin')) return 'admin'
       if (roles.includes('auditor')) return 'auditor'

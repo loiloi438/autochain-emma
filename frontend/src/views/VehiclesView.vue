@@ -59,7 +59,7 @@ const form = reactive({
 
 const canManage = computed(() => auth.hasRole('manager') || auth.hasRole('admin'))
 const roleLabel = computed(() => {
-  const roles = (auth.user?.roles || []).map((role) => role.name).filter(Boolean)
+  const roles = auth.roleNames
   return roles.length ? roles.join(', ') : 'Aucun rôle'
 })
 

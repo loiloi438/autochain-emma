@@ -133,7 +133,7 @@ const error = ref(null)
 const contract = ref(null)
 const toast = useToastStore()
 
-const activeRoles = computed(() => (auth.user?.roles || []).map((role) => role.name).filter(Boolean))
+const activeRoles = computed(() => auth.roleNames)
 const permissionsCount = computed(() => (auth.user?.permissions || []).length)
 const contractAddress = ref('')
 const contractNetwork = ref('Sepolia')
@@ -159,7 +159,7 @@ async function loadUsers() {
 
 function editUserRoles(user) {
   editingUser.value = user
-  selectedRoles.value = [...user.roles]
+  selectedRoles.value = (user.roles || []).map((role) => typeof role === 'string' ? role : role.name).filter(Boolean)
 }
 
 function cancelEdit() {
