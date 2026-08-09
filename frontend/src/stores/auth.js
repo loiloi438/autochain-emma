@@ -1,24 +1,28 @@
 import { defineStore } from 'pinia'
 import api from '../services/api'
 
+function normalizeRoleNames(roles) {
+  return (roles || [])
+    .map((role) => (typeof role === 'string' ? role : role?.name))
+    .filter(Boolean)
+    .map((role) => role.toLowerCase())
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: localStorage.getItem('autochain_token') || '',
     user: null,
   }),
   getters: {
-    roleNames: (state) => (state.user?.roles || [])
-      .map((role) => (typeof role === 'string' ? role : role?.name))
-      .filter(Boolean)
-      .map((role) => role.toLowerCase()),
+    roleNames: (state) => normalizeRoleNames(state.user?.roles),
     isAuthenticated: (state) => Boolean(state.token),
-    roles: (state, getters) => getters.roleNames,
+    roles: (state) => normalizeRoleNames(state.user?.roles),
     hasRole: (state) => (roleName) => (state.user?.roles || []).some((role) => {
       const name = typeof role === 'string' ? role : role?.name
       return name?.toLowerCase() === roleName.toLowerCase()
     }),
-    homeRoute: (state, getters) => {
-      const roles = getters.roleNames
+    homeRoute: (state) => {
+      const roles = normalizeRoleNames(state.user?.roles)
 
       if (roles.includes('admin')) return 'admin'
       if (roles.includes('auditor')) return 'auditor'
