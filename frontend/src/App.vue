@@ -105,6 +105,7 @@ const roleProfiles = {
     title: 'Centre de pilotage',
     context: 'Administration, rôles et supervision de la plateforme',
     navigation: [
+      { to: '/dashboard', label: 'Tableau de bord', icon: '📊' },
       { to: '/admin', label: 'Administration', icon: '⚙️' },
       { to: '/vehicles', label: 'Parc automobile', icon: '🚗' },
       { to: '/alerts', label: 'Alertes', icon: '⚠️' },
@@ -129,6 +130,7 @@ const roleProfiles = {
     title: 'Espace conducteur',
     context: 'Votre mission, votre véhicule et vos relevés',
     navigation: [
+      { to: '/dashboard', label: 'Tableau de bord', icon: '📊' },
       { to: '/driver', label: 'Ma mission', icon: '🛣️' },
       { to: '/vehicles', label: 'Mon véhicule', icon: '🚗' },
       { to: '/alerts', label: 'Mes alertes', icon: '⚠️' },
@@ -140,6 +142,7 @@ const roleProfiles = {
     title: 'Atelier de maintenance',
     context: 'Interventions, pièces et historique technique',
     navigation: [
+      { to: '/dashboard', label: 'Tableau de bord', icon: '📊' },
       { to: '/garage', label: 'Nouvelle intervention', icon: '🔧' },
       { to: '/vehicles', label: 'Véhicules', icon: '🚗' },
       { to: '/entretien', label: 'Historique atelier', icon: '🧰' },
@@ -151,6 +154,7 @@ const roleProfiles = {
     title: 'Espace audit',
     context: 'Vérification des preuves et historique certifié',
     navigation: [
+      { to: '/dashboard', label: 'Tableau de bord', icon: '📊' },
       { to: '/auditor', label: 'Audit véhicule', icon: '🔎' },
       { to: '/vehicles', label: 'Parc consultable', icon: '🚗' },
       { to: '/alerts', label: 'Événements', icon: '⚠️' },

@@ -35,10 +35,10 @@ services:
         value: file
       - key: FRONTEND_URL
         # Set this to the exact Vercel production URL.
-        value: "https://your-frontend.vercel.app"
+        value: "https://autochain-emma.vercel.app"
       - key: CORS_ALLOWED_ORIGINS
         # Include the Vercel production URL and any preview URLs that need access.
-        value: "https://your-frontend.vercel.app"
+        value: "https://autochain-emma.vercel.app"
 
 staticSites:
   - type: static_site
@@ -52,7 +52,7 @@ staticSites:
         # Set this to your backend public URL after deployment, for example:
         # https://autchain-backend.onrender.com/api
         # The frontend uses this variable to call your Laravel API.
-        value: ""
+        value: "https://autochain-emma-qgsk.onrender.com/api"
 
 databases:
   - name: autchain-db

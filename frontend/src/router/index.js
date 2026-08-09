@@ -49,10 +49,6 @@ router.beforeEach(async (to) => {
   if (to.meta.auth && !auth.isAuthenticated) return { name: 'login' }
   if (to.meta.guest && auth.isAuthenticated) return { name: auth.homeRoute }
 
-  if (to.name === 'dashboard' && auth.isAuthenticated) {
-    if (auth.homeRoute !== 'dashboard') return { name: auth.homeRoute }
-  }
-
   if (to.meta.roles && auth.isAuthenticated) {
     const allowed = to.meta.roles.some((role) => auth.hasRole(role))
     if (!allowed) return { name: auth.homeRoute }
